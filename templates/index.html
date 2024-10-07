@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Monitoring Suhu & Penyiraman Otomatis</title>
+
+        <!-- Bootstrap CSS -->
+        <link
+            href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <!-- Chart.js -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #f8f9fa;
+            }
+            .container {
+                margin: 20px auto;
+            }
+            h2 {
+                margin-top: 0;
+            }
+            canvas {
+                max-width: 100%;
+                height: auto;
+            }
+            .btn-custom {
+                margin-right: 10px;
+            }
+            .card-header {
+                font-weight: bold;
+                text-align: center;
+                font-size: 1.2rem;
+            }
+            .card-body {
+                text-align: center;
+                font-size: 1.5rem;
+                font-weight: bold;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2 class="text-center">Data Sensor</h2>
+            <div class="row row-cols-1 row-cols-sm-2 g-4">
+                <div class="col">
+                    <div class="card">
+                        <canvas id="tempChart" class="card-img-top"></canvas>
+                        <div class="card-body">
+                            <p class="lead card-text">
+                                Suhu: <span id="temperature">0</span>°C
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card">
+                        <canvas
+                            id="humidityChart"
+                            class="card-img-top"
+                        ></canvas>
+                        <div class="card-body">
+                            <p class="lead card-text">
+                                Kelembapan: <span id="humidity">0</span>%
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Tambahkan elemen card untuk tanggal dan jam -->
+            <div class="row row-cols-1 row-cols-sm-2 g-2">
+                <div class="col">
+                    <div class="card">
+                        <div class="card-body">
+                            <span id="date"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <span id="time"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h2 class="text-center">Kontrol Penyiraman</h2>
+            <div class="text-center mb-4">
+                <button
+                    class="btn btn-primary btn-custom"
+                    onclick="sendCommand('WATER_ON')"
+                >
+                    Nyalakan Penyiraman
+                </button>
+                <button
+                    class="btn btn-danger btn-custom"
+                    onclick="sendCommand('WATER_OFF')"
+                >
+                    Matikan Penyiraman
+                </button>
+            </div>
+        </div>
+
+        <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+        <script>
+            const socket = io();
+            const temperatureData = [];
+            const humidityData = [];
+            const labels = [];
+
+            // Initialize temperature line chart
+            const tempCtx = document
+                .getElementById("tempChart")
+                .getContext("2d");
+            const tempChart = new Chart(tempCtx, {
+                type: "line",
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: "Suhu (°C)",
+                            data: temperatureData,
+                            borderColor: function (context) {
+                                const index = context.dataIndex;
+                                const temp = temperatureData[index];
+                                return getTemperatureColor(temp);
+                            },
+                            backgroundColor: function (context) {
+                                const index = context.dataIndex;
+                                const temp = temperatureData[index];
+                                return getTemperatureColor(temp, true);
+                            },
+                            borderWidth: 2,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: "Waktu"
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: "Suhu (°C)"
+                            },
+                            ticks: {
+                                color: "rgba(75, 192, 192, 1)"
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Initialize humidity bar chart
+            const humidityCtx = document
+                .getElementById("humidityChart")
+                .getContext("2d");
+            const humidityChart = new Chart(humidityCtx, {
+                type: "line",
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: "Kelembapan (%)",
+                            data: humidityData,
+                            backgroundColor: [] // To be set dynamically
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: "Waktu"
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: "Kelembapan (%)"
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Function to determine color based on temperature
+            function getTemperatureColor(temp, isFill = false) {
+                if (temp < 26)
+                    return isFill
+                        ? "rgba(75, 192, 192, 0.2)"
+                        : "rgba(75, 192, 192, 1)";
+                // Green
+                else if (temp <= 35)
+                    return isFill
+                        ? "rgba(255, 206, 86, 0.2)"
+                        : "rgba(255, 206, 86, 1)";
+                // Yellow
+                else
+                    return isFill
+                        ? "rgba(255, 99, 132, 0.2)"
+                        : "rgba(255, 99, 132, 1)"; // Red
+            }
+
+            // Function to determine color based on humidity
+            function getHumidityColor(hum) {
+                if (hum >= 40 && hum <= 60)
+                    return "rgba(75, 192, 192, 1)"; // Green
+                else if ((hum >= 30 && hum < 40) || (hum > 60 && hum <= 70))
+                    return "rgba(255, 206, 86, 1)"; // Yellow
+                else return "rgba(255, 99, 132, 1)"; // Red
+            }
+
+            // Update data sensor di halaman
+            socket.on("sensor_update", function (data) {
+                document.getElementById("temperature").innerText =
+                    data.temperature;
+                document.getElementById("humidity").innerText = data.humidity;
+
+                // Update chart data
+                const now = new Date().toLocaleTimeString();
+                labels.push(now);
+                temperatureData.push(data.temperature);
+                humidityData.push(data.humidity);
+
+                // Set background colors for humidity bars
+                humidityChart.data.datasets[0].backgroundColor.push(
+                    getHumidityColor(data.humidity)
+                );
+
+                // Update temperature chart
+                tempChart.data.labels = labels;
+                tempChart.data.datasets[0].data = temperatureData;
+
+                // Limit the number of data points
+                if (temperatureData.length > 10) {
+                    temperatureData.shift();
+                    humidityData.shift();
+                    labels.shift();
+                    humidityChart.data.datasets[0].backgroundColor.shift();
+                }
+
+                tempChart.update();
+                humidityChart.update();
+            });
+
+            // Function to update clock every second
+            function updateClock() {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString();
+                const dateString = now.toLocaleDateString();
+
+                document.getElementById("time").innerText = timeString;
+                document.getElementById("date").innerText = dateString;
+            }
+
+            // Update clock every second
+            setInterval(updateClock, 1000);
+            updateClock(); // Initial call to display the time immediately
+
+            // Kirim perintah ke server untuk penyiraman
+            function sendCommand(command) {
+                socket.send(command);
+            }
+        </script>
+
+        <!-- Bootstrap JS and dependencies -->
+        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    </body>
+</html>
