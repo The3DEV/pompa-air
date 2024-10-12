@@ -52,10 +52,27 @@ def receive_data():
     except Exception as e:
         app.logger.error(f"Error processing request: {e}")
         return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+@app.route('/control/<command>', methods=['POST'])
+def control(command):
+  global relay_status
+  if command == 'on':
+    relay_status = 'ON'
+  elif command == 'off':
+    relay_status = 'OFF'
+  else:
+    return jsonify({'status': 'error', 'message': 'Invalid command'}), 400
+
+  return jsonify({'status': 'success', 'relay': relay_status}), 200
+# ESP32 akan mengirim GET request ke endpoint ini untuk mendapatkan status relay
+@app.route('/data', methods=['GET'])
+def control_relay():
+    global relay_status
+    return jsonify({'relay': relay_status})
 @socketio.on("connect")
 def handle_connect():
   print("Client Connected");
   socketio.start_background_task(target = update_sensor_data)
+# Endpoint untuk mengontrol relay melalui API
   
 @socketio.on("disconnect")
 def handle_diaconnect():

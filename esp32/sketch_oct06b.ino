@@ -5,19 +5,20 @@
 #include <Adafruit_ST7735.h>
 #include <SPI.h>
 #include <WiFiUdp.h>
-#include <NTPClient.h>  // Tambahkan library NTPClient
+#include <NTPClient.h>
 
 // Koneksi Wi-Fi
 const char* ssid = "P";
 const char* password = "hxlnc@91";
 
 // Informasi endpoint API Flask
-const char* serverName = "http://10.52.54.170:5000/data"; // Ganti IP dengan IP server Flask
+const char* serverName = "http://10.163.129.118:5000/data"; // Ganti IP dengan IP server Flask
 
 // Pin untuk DHT dan Relay
 #define DHTPIN 15      // Pin untuk DHT11
 #define DHTTYPE DHT11  // Tipe sensor DHT
 #define RELAY_PIN 5    // Pin untuk relay pompa
+#define LIGHT_CONTROL_PIN 16 // Pin untuk mengontrol lampu
 
 // Pin configuration for TFT
 #define TFT_CS     4
@@ -44,19 +45,21 @@ DHT dht(DHTPIN, DHTTYPE);
 void setup() {
   Serial.begin(115200);
   dht.begin();
-  
+
   // Set relay sebagai output
   pinMode(RELAY_PIN, OUTPUT);
+  pinMode(LIGHT_CONTROL_PIN, OUTPUT); // Set pin untuk lampu
   digitalWrite(RELAY_PIN, HIGH); // Pompa off (HIGH = OFF)
+  digitalWrite(LIGHT_CONTROL_PIN, LOW); // Lampu off (LOW = OFF)
 
   // Inisialisasi TFT
-  tft.initR(INITR_BLACKTAB);   // Initialize ST7735R chip
-  tft.fillScreen(BLACK);       // Fill screen with black
-  
+  tft.initR(INITR_BLACKTAB); // Initialize ST7735R chip
+  tft.fillScreen(BLACK); // Fill screen with black
+
   // Set text size and color for TFT
   tft.setTextSize(1);
   tft.setTextColor(WHITE);
-  
+
   // Display static title on TFT
   tft.setCursor(10, 10);
   tft.print("Monitoring Suhu & Kelembapan");
@@ -76,12 +79,12 @@ void setup() {
 void loop() {
   // Perbarui waktu dari NTP
   timeClient.update();
-  
+
   if(WiFi.status() == WL_CONNECTED) {
     // Membaca suhu dan kelembapan
     float temp = dht.readTemperature();
     float hum = dht.readHumidity();
-    
+
     if (isnan(temp) || isnan(hum)) {
       Serial.println("Failed to read from DHT sensor!");
       return;
@@ -96,13 +99,13 @@ void loop() {
 
     // Inisialisasi HTTPClient
     HTTPClient http;
-    http.begin(serverName);   // Endpoint API Flask
+    http.begin(serverName); // Endpoint API Flask
     http.addHeader("Content-Type", "application/json"); // Header untuk JSON
 
     // Kirim data dengan POST request
     int httpResponseCode = http.POST(jsonData);
-    
-     // Cek hasil response dari server
+
+    // Cek hasil response dari server
     if (httpResponseCode > 0) {
       String response = http.getString();
       Serial.println("HTTP Response code: " + String(httpResponseCode));
@@ -111,7 +114,7 @@ void loop() {
     else {
       Serial.println("Error sending POST: " + String(httpResponseCode));
     }
-    
+
     // End HTTP connection
     http.end();
   }
@@ -119,7 +122,10 @@ void loop() {
     Serial.println("WiFi not connected");
   }
 
-  delay(1000);  // Kirim data setiap 5 detik
+  // Cek apakah ada perintah dari Arduino melalui serial
+    // Cek apakah ada perintah dari Arduino melalui serial
+
+  delay(1000); // Kirim data setiap 1 detik
 }
 
 // Function to display data on TFT screen

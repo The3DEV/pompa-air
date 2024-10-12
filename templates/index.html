@@ -46,8 +46,8 @@
     <body>
         <div class="container">
             <h2 class="text-center">Data Sensor</h2>
-            <div class="row row-cols-1 row-cols-sm-2 g-4">
-                <div class="col">
+            <div class="row row-cols-1 row-cols-sm-2 g-3">
+                <div class="col col-md-6">
                     <div class="card">
                         <canvas id="tempChart" class="card-img-top"></canvas>
                         <div class="card-body">
@@ -57,7 +57,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col">
+                <div class="col col-md-6">
                     <div class="card">
                         <canvas
                             id="humidityChart"
@@ -70,39 +70,36 @@
                         </div>
                     </div>
                 </div>
-            </div>
-            <!-- Tambahkan elemen card untuk tanggal dan jam -->
-            <div class="row row-cols-1 row-cols-sm-2 g-2">
-                <div class="col">
-                    <div class="card">
-                        <div class="card-body">
-                            <span id="date"></span>
+                </div>
+                <!-- Tambahkan elemen card untuk tanggal dan jam -->
+                <div class="row row-cols-sm-1">
+                    <div class="col col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <span id="date"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <span id="time"></span>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-body">
-                            <span id="time"></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <h2 class="text-center">Kontrol Penyiraman</h2>
-            <div class="text-center mb-4">
-                <button
-                    class="btn btn-primary btn-custom"
-                    onclick="sendCommand('WATER_ON')"
-                >
-                    Nyalakan Penyiraman
-                </button>
-                <button
-                    class="btn btn-danger btn-custom"
-                    onclick="sendCommand('WATER_OFF')"
-                >
-                    Matikan Penyiraman
-                </button>
+            <!--<h2 class="text-center">Kontrol Penyiraman</h2>-->
+            <div class="row">
+                <div class="col text-center">
+                    <h3>Kontrol Lampu</h3>
+                    <button class="btn btn-success btn-custom" id="lampOn">
+                        Nyalakan Lampu
+                    </button>
+                    <button class="btn btn-danger btn-custom" id="lampOff">
+                        Matikan Lampu
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -277,6 +274,13 @@
             function sendCommand(command) {
                 socket.send(command);
             }
+            document.getElementById("lampOn").onclick = function () {
+                fetch("/lamp/on", { method: "POST" });
+            };
+
+            document.getElementById("lampOff").onclick = function () {
+                fetch("/lamp/off", { method: "POST" });
+            };
         </script>
 
         <!-- Bootstrap JS and dependencies -->

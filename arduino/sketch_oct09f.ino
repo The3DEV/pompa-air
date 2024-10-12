@@ -37,7 +37,7 @@ void setup() {
   digitalWrite(relayPin, LOW); // Start with the relay off (lamp off)
   digitalWrite(lightPin, LOW); // Start with the relay off (lamp off)
 
-  Serial.begin(9600);  // Initialize serial communication (optional for debugging)
+  Serial.begin(115200);  // Initialize serial communication (optional for debugging)
 
   // Initialize the OLED display
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // I2C address for SSD1306
@@ -51,6 +51,39 @@ void setup() {
 }
 
 void loop() {
+    
+   if (Serial.available() > 0) {
+    String command = Serial.readStringUntil('\n');  // Read the command from ESP32
+    command.trim();  // Remove any newline characters
+
+    if (command == "L1") {
+      digitalWrite(relayPin, HIGH);  // Turn on the relay (and the lamp)
+      display.clearDisplay();
+      display.setCursor(0, 0);
+      display.println("Lamp 1");
+      display.display();
+    } else if (command == "L2") {
+      digitalWrite(relayPin, LOW);  // Turn off the relay (and the lamp)
+      display.clearDisplay();
+      display.setCursor(0, 0);
+      display.println("Lamp 2");
+      display.display();
+    }
+    else if (command == "On") {
+      digitalWrite(lightPin, HIGH);  // Turn on the second lamp
+      display.clearDisplay();
+      display.setCursor(0, 0);
+      display.println("Lamp On");
+      display.display();
+    }
+    else if (command == "Off") {
+      digitalWrite(lightPin, LOW);  // Turn off the second lamp
+      display.clearDisplay();
+      display.setCursor(0, 0);
+      display.println("Lamp Off");
+      display.display();
+    }
+  }
   char key = keypad.getKey();
 
   if (key) {
@@ -61,13 +94,13 @@ void loop() {
       display.clearDisplay();
       display.setCursor(0, 0);
       if (inputCode == turnOnCode) {
-        analogWrite(relayPin, 255);  // Turn the relay (and the lamp) on (HIGH)
-        display.println("Lamp 1");
-        Serial.println("Lamp 1");
+        analogWrite(lightPin, 255);  // Turn the relay (and the lamp) on (HIGH)
+        display.println("Lamp On");
+        Serial.println("Lamp On");
       } else if (inputCode == turnOffCode) {
-        analogWrite(relayPin, 0);  // Turn the relay (and the lamp) off (LOW)
-        display.println("Lamp 2");
-        Serial.println("Lamp 2");
+        analogWrite(lightPin, 0);  // Turn the relay (and the lamp) off (LOW)
+        display.println("Lamp Off");
+        Serial.println("Lamp Off");
       } else {
         display.println("Invalid Code");
         Serial.println("Invalid Code");
@@ -92,17 +125,17 @@ void loop() {
       display.println("Lamp Control");
       display.display();
     } else if (key == 'A'){
-      analogWrite(lightPin, 255);
+      analogWrite(relayPin, 255);
             display.clearDisplay();
       display.setCursor(0, 0);
-      display.println("Lamp On");
+      display.println("Lamp 1");
       display.display();
     }
      else if (key == 'B'){
-      analogWrite(lightPin, 0);
+      analogWrite(relayPin, 0);
       display.clearDisplay();
       display.setCursor(0, 0);
-      display.println("Lamp Off");
+      display.println("Lamp 2");
       display.display();
     }
         
