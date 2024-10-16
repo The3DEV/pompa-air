@@ -105,7 +105,9 @@
 
         <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
         <script>
-            const socket = io();
+            const socket = io("https://pompa-air.vercel.app", {
+                transports: ['polling'] // Force long polling instead of WebSocket
+            });
             const temperatureData = [];
             const humidityData = [];
             const labels = [];
